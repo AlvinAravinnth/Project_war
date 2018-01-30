@@ -1,7 +1,7 @@
-<%@page import="java.util.ArrayList"%>
+<%@page import="java.text.DecimalFormat"%>
+<%@page import="java.util.*"%>
 <%@page import="HelperClasses.ShoppingCartLineItem"%>
 <%@page import="EntityManager.WishListEntity"%>
-<%@page import="java.util.List"%>
 <%@page import="EntityManager.Item_CountryEntity"%>
 <%@page import="EntityManager.FurnitureEntity"%>
 <%@page import="EntityManager.RetailProductEntity"%>
@@ -13,6 +13,7 @@
     <body>
         <%
             double finalPrice = 0.0;
+            DecimalFormat df = new DecimalFormat("#0.00");
         %>
         <script>
             var totalPrice = 0;
@@ -21,10 +22,12 @@
             }
             function removeItem() {
                 checkboxes = document.getElementsByName('delete');
+                var sku = '';
                 var numOfTicks = 0;
                 for (var i = 0, n = checkboxes.length; i < n; i++) {
                     if (checkboxes[i].checked) {
                         numOfTicks++;
+                        sku += checkboxes[i].value + ':';
                     }
                 }
                 if (checkboxes.length == 0 || numOfTicks == 0) {
@@ -33,7 +36,7 @@
                     document.shoppingCart.submit();
                 } else {
                     window.event.returnValue = true;
-                    document.shoppingCart.action = "../../ECommerce_RemoveItemFromListServlet";
+                    document.shoppingCart.action = "../../ECommerce_RemoveItemFromListServlet?SKU=" + sku;
                     document.shoppingCart.submit();
                 }
             }
@@ -48,9 +51,9 @@
                 document.shoppingCart.action = "../../ECommerce_MinusFurnitureToListServlet?SKU=" + SKU;
                 document.shoppingCart.submit();
             }
-            function plus(SKU, name, price, imageURL) {
+            function plus(ID, SKU, name, price, imageURL) {
                 window.event.returnValue = true;
-                document.shoppingCart.action = "../../ECommerce_AddFurnitureToListServlet?SKU=" + SKU + "&price=" + price + "&name=" + name + "&imageURL=" + imageURL;
+                document.shoppingCart.action = "../../ECommerce_AddFurnitureToListServlet?id=" + ID + "&SKU=" + SKU + "&price=" + price + "&name=" + name + "&imageURL=" + imageURL + "&fromJsp=no";
                 document.shoppingCart.submit();
             }
             function finalTotalPrice() {
@@ -65,14 +68,11 @@
                 $("#btnCheckout").prop("disabled", true);
                 $("#btnRemove").prop("disabled", true);
                 $(".productDetails").removeAttr("href");
+                $(".minus").attr("style","cursor: not-allowed;");
+                $(".plus").attr("style","cursor: not-allowed;");
                 $("html, body").animate({scrollTop: $(document).height() / 3}, "slow");
                 $("#makePaymentForm").show("slow", function () {
                 });
-            }
-            function makePayment() {
-                window.event.returnValue = true;
-                document.makePaymentForm.action = "../../ECommerce_PaymentServlet";
-                document.makePaymentForm.submit();
             }
         </script>
 
@@ -127,41 +127,45 @@
                                                         <%ArrayList<ShoppingCartLineItem> shoppingCart = (ArrayList<ShoppingCartLineItem>) (session.getAttribute("shoppingCart"));
                                                             try {
                                                                 if (shoppingCart != null && shoppingCart.size() > 0) {
-                                                                    //for (ShoppingCartLineItem item : shoppingCart) {
+                                                                    for(ShoppingCartLineItem item : shoppingCart) {
                                                         %>
                                                         <tr class="cart_table_item">
                                                             <td class="product-remove">
-                                                                <input type="checkbox" name="delete" value="" />
+                                                                <input type="checkbox" name="delete" value="<%=item.getSKU()%>" />
                                                             </td>
                                                             <td class="product-thumbnail">
-                                                                <a href="furnitureProductDetails.jsp">
-                                                                    <img width="100" height="100" alt="" class="img-responsive" src="../../..<%=ImageURL()%>">
+                                                                <a href="furnitureProductDetails.jsp?sku=<%=item.getSKU()%>">
+                                                                    <img width="100" height="100" alt="" class="img-responsive" src="../../..<%=item.getImageURL()%>">
                                                                 </a>
                                                             </td>
                                                             <td class="product-name">
-                                                                <a class="productDetails" href="furnitureProductDetails.jsp">Insert product name</a>
+                                                                <a class="productDetails" href="furnitureProductDetails.jsp?sku=<%=item.getSKU()%>"><%=item.getName()%></a>
                                                             </td>
                                                             <td class="product-price">
-                                                                $<span class="amount" id="price<%=SKU()%>">
-                                                                    insert price here
+                                                                $<span class="amount" id="price<%=item.getSKU()%>">
+                                                                    <%=df.format(item.getPrice())%>
                                                                 </span>
                                                             </td>
                                                             <td class="product-quantity">
                                                                 <form enctype="multipart/form-data" method="post" class="cart">
                                                                     <div class="quantity">
-                                                                        <input type="button" class="minus" value="-" onclick="minus('<%=SKU()%>')">
-                                                                        <input type="text" disabled="true" class="input-text qty text" title="Qty" value="" name="quantity" min="1" step="1" id="<%=SKU()%>">
-                                                                        <input type="button" class="plus" value="+" onclick="plus('<%=SKU()%>', '<%=Name()%>',<%=Price()%>, '<%=ImageURL()%>')">
+                                                                        <input type="button" id="btnMinus" class="minus" value="-" onclick="minus('<%=item.getSKU()%>')">
+                                                                        <input type="text" disabled="true" class="input-text qty text" title="Qty" value="<%=item.getQuantity()%>" name="quantity" min="1" step="1" id="<%=item.getSKU()%>">
+                                                                        <input type="button" id="btnPlus" class="plus" value="+" onclick="plus('<%=item.getId()%>', '<%=item.getSKU()%>', '<%=item.getName()%>',<%=item.getPrice()%>, '<%=item.getImageURL()%>')">
                                                                     </div>
                                                                 </form>
                                                             </td>
                                                             <td class="product-subtotal">
-                                                                $<span class="amount" id="totalPrice<%=SKU()%>">
-                                                                    insert total price here
+                                                                $<span class="amount" id="totalPrice<%=item.getSKU()%>">
+                                                                    <%
+                                                                        finalPrice += item.getPrice() * item.getQuantity();
+                                                                        out.print(df.format(item.getPrice() * item.getQuantity()));
+                                                                    %>
                                                                 </span>
                                                             </td>
                                                         </tr>
-                                                        <%                                                                 //   }
+                                                        <%
+                                                                    }                                                         //   }
                                                                 }
                                                             } catch (Exception ex) {
                                                                 System.out.println(ex);
@@ -173,11 +177,11 @@
                                                             <td></td>
                                                             <td></td>
                                                             <td class="product-subtotal" style="font-weight: bold">
-                                                                Total: 
+                                                                Total:
                                                             </td>
                                                             <td class="product-subtotal">
                                                                 $<span class="amount" id="finalPrice" name="finalPrice">
-                                                                    
+                                                                    <%=df.format(finalPrice)%>
                                                                 </span>
                                                             </td>
                                                         </tr>
@@ -188,25 +192,26 @@
                                                 <div align="right"><a href="#checkoutModal" data-toggle="modal"><button id="btnCheckout" class="btn btn-primary btn-lg">Check Out</button></a></div>
 
                                                 <%} else {%>
-                                                <div align="right"><a href="#checkoutModal" data-toggle="modal"><button disabled="true" id="btnCheckout" class="btn btn-primary btn-lg">Check Out</button></a></div>
+                                                <div align="right" style="cursor: not-allowed;"><a href="#checkoutModal" data-toggle="modal"><button disabled="true" id="btnCheckout" class="btn btn-primary btn-lg">Check Out</button></a></div>
                                                 <%}%>
                                             </form>
 
 
-                                            <form id="makePaymentForm" name="makePaymentForm" method="post" hidden>
+                                            <form id="makePaymentForm" action="../../ECommerce_PaymentServlet" name="makePaymentForm" method="post" hidden>
                                                 <div class="col-md-8">
+                                                    <br>
                                                     <br>
                                                     <table>
                                                         <tbody>
                                                             <tr>
-                                                        <h4 style="text-align: left">Credit Card Payment Details</h4>
-                                                        </tr>
+                                                                <h4 style="text-align: left">Credit Card Payment Details</h4>
+                                                            </tr>
                                                         <tr>
                                                             <td style="padding: 5px">
                                                                 <label>Name on Card: </label>
                                                             </td>
                                                             <td style="padding: 5px">
-                                                                <input type="text" class="input-text text" title="name"id="txtName" required>                                                            
+                                                                <input type="text" class="input-text text" pattern="[A-Za-z]+" title="Please enter a valid name" id="txtName" required>                                                            
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -214,7 +219,7 @@
                                                                 <label>Card Number: </label>
                                                             </td>
                                                             <td style="padding: 5px">
-                                                                <input type="text" class="input-text text " title="cardno" id="txtCardNo" required>
+                                                                <input type="text" class="input-text text " maxlength="16" pattern="\d{16}|\d{4}[- ]\d{4}[- ]\d{4}[- ]\d{4}" title="Please provide a 16 credit card number format." title="cardno" id="txtCardNo" required>
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -222,7 +227,7 @@
                                                                 <label>CVV/CVC2: </label>
                                                             </td>
                                                             <td style="padding: 5px">
-                                                                <input type="text" class="input-text text " title="securitycode" id="txtSecuritycode" required>
+                                                                <input type="text" class="input-text text " type="number" maxlength="3" pattern="\d{3}" title="Please provide a valid cvv number" id="txtSecuritycode" required>
                                                             </td>
                                                         </tr>
 
@@ -245,14 +250,22 @@
                                                                     <option>November</option>
                                                                     <option>December</option>
                                                                 </select>
-                                                                <input type="text" style="width: 60px" class="input-text text" title="year" id="year" required>(eg: 2015)                                                        
+                                                                <input type="text" style="width: 60px" pattern="\d{4}" class="input-text text" title="Please enter a valid year" id="year" required>  (eg: 2015)                                                        
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td style="">
+                                                            <td>
+                                                                <h4 style="text-align: left">Pick up store</h4>
+                                                                <select class="dropdown" name="pickUpStore" title="Location">
+                                                                    <option>Queenstown Store</option>
+                                                                    <option>Kent Ridge Store</option>
+                                                                    <option>Tampines Store</option>
+                                                                </select>                                                
                                                             </td>
+                                                        </tr>
+                                                        <tr>
                                                             <td style="padding-top: 20px">
-                                                                <div align="right"><a href="#makePaymentModal" data-toggle="modal"><button class="btn btn-primary">Make Payment</button></a></div>
+                                                                <div align="left"><input type="submit" value="Make Payment" class="btn btn-primary"></div>
                                                             </td>
                                                         </tr>
                                                         </tbody></table>
@@ -315,7 +328,7 @@
                         </div>
                     </div>
                 </div>
-            </div>  
+            </div>
 
             <jsp:include page="footer.html" />
 

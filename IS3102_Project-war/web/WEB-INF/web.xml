@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app version="3.1" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd">
     <servlet>
+        <servlet-name>ECommerce_GetMember</servlet-name>
+        <servlet-class>B_servlets.ECommerce_GetMember</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ECommerce_GetMember</servlet-name>
+        <url-pattern>/ECommerce_GetMember</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>ECommerce_MemberEditProfileServlet</servlet-name>
+        <servlet-class>B_servlets.ECommerce_MemberEditProfileServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ECommerce_MemberEditProfileServlet</servlet-name>
+        <url-pattern>/ECommerce_MemberEditProfileServlet</url-pattern>
+    </servlet-mapping>
+    
+    <servlet>
         <servlet-name>AccountManagement_LoginServlet</servlet-name>
         <servlet-class>A1_servlets.AccountManagement_LoginServlet</servlet-class>
     </servlet>
