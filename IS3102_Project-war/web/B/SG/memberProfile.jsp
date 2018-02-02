@@ -1,3 +1,9 @@
+<%@page import="java.util.HashSet"%>
+<%@page import="java.sql.Time"%>
+<%@page import="java.text.SimpleDateFormat"%>
+<%@page import="java.util.Date"%>
+<%@page import="HelperClasses.ShoppingCartLineItem"%>
+<%@page import="java.util.ArrayList"%>
 <%@page import="HelperClasses.Member"%>
 <%@page import="EntityManager.CountryEntity"%>
 <%@page import="EntityManager.LoyaltyTierEntity"%>
@@ -56,7 +62,8 @@
                     <%
                         try {
                             Member member = (Member) session.getAttribute("member");
-                            DecimalFormat df = new DecimalFormat("#.##");
+                            DecimalFormat df = new DecimalFormat("#0.00");
+                            ArrayList<ShoppingCartLineItem> boughtItem = (ArrayList<ShoppingCartLineItem>)session.getAttribute("orderItem");
                     %>
                     <div class="row" style="min-height: 500px;">
                         <div class="tabs">
@@ -387,8 +394,7 @@
                                                         out.println("selected");
                                                     }%>>What is your favourite animal?</option>
                                             </select>
-                                            <input class="form-control" type="text" required="true" name="securityAnswer" value="
-                                            <%if (member.getSecurityAnswer() == null) {
+                                            <input class="form-control" type="text" required="true" name="securityAnswer" value="<%if (member.getSecurityAnswer() == null) {
                                                     out.println("");
                                                 } else {
                                                     out.println(member.getSecurityAnswer());
@@ -448,6 +454,148 @@
                                         }
                                     %>
                                 </div>
+                                <div id="loyaltyProgram" class="tab-pane">
+                                    <h4>Loyalty Program</h4>
+                                    <div>There is currently no loyalty program avaliable</div>
+                                </div>
+                                    <div id="salesHistory" class="tab-pane">
+                                        <h4>Sales History</h4>
+                                        <% if (boughtItem != null && boughtItem.size() > 0) {
+                                                try {
+                            
+                                                    double finalPrice = 0;
+                                                    ArrayList<Integer> orderIdList = new ArrayList<Integer>();
+                                                    for (ShoppingCartLineItem item : boughtItem) {
+                                                        orderIdList.add(item.getOrderId());
+                                                    }
+                                                    ArrayList<Integer> undupOrderIdList = new ArrayList<Integer>(new HashSet<Integer>(orderIdList));
+                                                    for (int i = 0; i < undupOrderIdList.size(); i++) {
+                                        %>
+                                        <h5>Order #<%=i+1%></h5>
+                                        <%
+                                            int counter = 0;
+                                            for (ShoppingCartLineItem item : boughtItem) {
+                                                if(item.getOrderId() == undupOrderIdList.get(i)){
+                                                    if(counter == 0){
+                                                        Date datePurchased = item.getDatePurchased();
+                                                        Time timePurchased = item.getTimePurchased();
+                                                        SimpleDateFormat dateFormat = new SimpleDateFormat("EEEEE, dd MMMMM yyyy");
+                                                        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
+                                                        %>
+                                                        <h6>Date of Purchase: 
+                                                        <%
+                                                            out.print(dateFormat.format(datePurchased)  );
+                                                        %>
+                                                        <h6>Time of Purchase: 
+                                                        <%
+                                                            out.print(timeFormat.format(timePurchased));
+                                                        %>
+                                                        </h6>
+                                                        <h6 style="text-decoration:underline; font-weight:bold">Collection Details:</h6>
+                                                        <h6>Store Name: <%=item.getStoreName()%></h6>
+                                                        <h6>Address: <%=item.getStoreAddress()%></h6>
+                                                        <%
+                                                        counter++;
+                                                    }
+                                                }
+                                            }
+                                        %>
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="row featured-boxes">
+                                                    <div class="col-md-12">
+                                                        <div class="featured-box featured-box-secundary featured-box-cart">
+                                                            <div class="box-content">
+                                                                <table cellspacing="0" class="shop_table cart">
+                                                                    <thead>
+                                                                        <tr>                                                            
+                                                                            <th class="product-thumbnail" style="width: 25%">
+                                                                                Image
+                                                                            </th>
+                                                                            <th class="product-name" style="width: 38%">
+                                                                                Product
+                                                                            </th>
+
+                                                                            <th class="product-price" style="width: 15%">
+                                                                                Price
+                                                                            </th>
+                                                                            <th class="product-quantity" style="width: 15%">
+                                                                                Quantity
+                                                                            </th>
+                                                                            <th class="product-subtotal" style="width: 15%">
+                                                                                Subtotal
+                                                                            </th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        <%
+                                                                            for (ShoppingCartLineItem item : boughtItem) {
+                                                                                if (item.getOrderId() == undupOrderIdList.get(i)) {
+                                                                        %>
+                                                                        <tr class="cart_table_item">
+                                                                            <td class="product-thumbnail">
+                                                                                <a href="../../ECommerce_ViewProductDetailsServlet?sku=<%=item.getSKU()%>">
+                                                                                    <img width="100" height="100" alt="" class="img-responsive" src="../../..<%=item.getImageURL()%>">
+                                                                                </a>
+                                                                            </td>
+                                                                            <td class="product-name">
+                                                                                <a class="productDetails" href="../../ECommerce_ViewProductDetailsServlet?sku=<%=item.getSKU()%>"><%=item.getName()%></a>
+                                                                            </td>
+                                                                            <td class="product-price">
+                                                                                $<span class="amount" id="price<%=item.getSKU()%>">
+                                                                                    <%=df.format(item.getPrice())%>
+                                                                                </span>
+                                                                            </td>
+                                                                            <td class="product-quantity">
+                                                                                <span class="qty">
+                                                                                    <%=item.getQuantity()%>
+                                                                                </span>
+                                                                            </td>
+                                                                            <td class="product-subtotal">
+                                                                                $<span class="amount" id="totalPrice<%=item.getSKU()%>">
+                                                                                    <%
+                                                                                        finalPrice += item.getPrice() * item.getQuantity();
+
+                                                                                        out.print(df.format(item.getPrice() * item.getQuantity()));
+                                                                                    %>
+                                                                                </span>
+                                                                            </td>
+                                                                        </tr>
+                                                                        <%
+                                                                                }
+                                                                            }%>
+                                                                        <tr>
+                                                                            <td></td>
+                                                                            <td></td>
+                                                                            <td></td>
+                                                                            <td class="product-subtotal" style="font-weight: bold; color: #cc3b33">
+                                                                                Total:
+                                                                            </td>
+                                                                            <td class="product-subtotal" style="font-weight: bold">
+                                                                                $<span class="amount" id="finalPrice" name="finalPrice">
+                                                                                    <b><%=df.format(finalPrice)%></b>
+                                                                                </span>
+                                                                            </td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <%
+                                                    finalPrice = 0.0;
+                                                    }
+                  
+                                                } catch (Exception ex) {
+                                                System.out.println(ex);
+                                            }
+                                        } else {%>
+                                        <h5 class="center">You do not have any sales history.</h5>
+                                        <%}%>
+                                    </div>
                             </div>
                         </div>
                     </div>

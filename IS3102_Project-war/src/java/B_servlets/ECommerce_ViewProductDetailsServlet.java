@@ -1,16 +1,14 @@
-package B_servlets;
-
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+package B_servlets;
 
-import HelperClasses.Member;
-import HelperClasses.ShoppingCartLineItem;
+import HelperClasses.Furniture;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -24,67 +22,42 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-/**
- *
- * @author mandf
- */
-
-public class ECommerce_GetMember extends HttpServlet {
+public class ECommerce_ViewProductDetailsServlet extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
-        HttpSession session = request.getSession();
-        try{
-            String memberEmail = session.getAttribute("memberEmail").toString();
-            if(!memberEmail.equals("")){
-                Member mem = getMember(memberEmail);
-                session.setAttribute("member", mem);
-                session.setAttribute("memberName", mem.getName());
-                ArrayList<ShoppingCartLineItem> itemList = getOrderItem(mem.getId());
-                session.setAttribute("orderItem", itemList);
-                response.sendRedirect("/IS3102_Project-war/B/SG/memberProfile.jsp");
-            }
-        }catch(Exception ex){
+        try {
+            HttpSession session = request.getSession();
+            String sku = request.getParameter("sku");
+            Long countryID = (Long) session.getAttribute("countryID");
+            List<Furniture> furniture = retrieveFurnitureRESTful(countryID);
+            session.setAttribute("furnitures", furniture);
+            response.sendRedirect("/IS3102_Project-war/B/SG/furnitureProductDetails.jsp?sku=" + sku);
+        } catch (Exception ex) {
             out.println("\n\n " + ex.getMessage());
         }
     }
     
-    public Member getMember(String email) {
+    public List<Furniture> retrieveFurnitureRESTful(Long countryID) {
         Client client = ClientBuilder.newClient();
         WebTarget target = client
-                .target("http://localhost:8080/IS3102_WebService-Student/webresources/entity.memberentity").path("getMember")
-                .queryParam("email", email);
+                .target("http://localhost:8080/IS3102_WebService-Student/webresources/entity.furnitureentity")
+                .path("getFurnitureList")
+                .queryParam("countryID", countryID);
         Invocation.Builder invocationBuilder = target.request(MediaType.APPLICATION_JSON);
+        invocationBuilder.header("some-header", "true");
         Response response = invocationBuilder.get();
-        System.out.println("get member status: " + response.getStatus());
+        System.out.println("status: " + response.getStatus());
 
         if (response.getStatus() != 200) {
             return null;
         }
 
-        Member member = response.readEntity(new GenericType<Member>() {
+        List<Furniture> list = response.readEntity(new GenericType<List<Furniture>>() {
         });
-        return member;
-    }
-    
-     public ArrayList<ShoppingCartLineItem> getOrderItem(long memId){
-        Client client = ClientBuilder.newClient();
-        WebTarget target = client
-                .target("http://localhost:8080/IS3102_WebService-Student/webresources/entity.memberentity").path("getOrderItem")
-                .queryParam("memberId", memId);
-        Invocation.Builder invocationBuilder = target.request(MediaType.APPLICATION_JSON);
-        Response response = invocationBuilder.get();
-        System.out.println("get bought item status: " + response.getStatus());
-
-        if (response.getStatus() != 200) {
-            return null;
-        }
-
-        ArrayList<ShoppingCartLineItem> item = response.readEntity(new GenericType<ArrayList<ShoppingCartLineItem>>() {
-        });
-        return item;
+        return list;
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
